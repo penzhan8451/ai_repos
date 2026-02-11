@@ -34,6 +34,9 @@ const mediaSchema = new mongoose.Schema({
     count: { type: Number, default: 0 },
     users: [{ type: String }]
   },
+  favorites: {
+    users: [{ type: String }]
+  },
   comments: [commentSchema]
 }, {
   timestamps: true
