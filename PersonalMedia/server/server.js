@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
 import { connectMongoDB } from './config/database.js'
 import mediaRoutes from './routes/media.js'
+import authRoutes from './routes/auth.js'
 import fs from 'fs'
 import './services/gridfsService.js'
 
@@ -35,6 +36,7 @@ app.use('/uploads', express.static(uploadDir))
 
 // Routes
 app.use('/api/media', mediaRoutes)
+app.use('/api/auth', authRoutes)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
