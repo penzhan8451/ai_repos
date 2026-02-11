@@ -1,0 +1,12 @@
+.assets
+.env
+*.pyc
+dist/
+build/
+docs/
+.venv/
+__pycache__/
+poetry.lock
+.pytest_cache/
+tests/
+botpy.log
