@@ -280,7 +280,7 @@ router.get('/:id/likes', async (req, res) => {
     res.json(likes)
   } catch (error) {
     console.error('Error fetching likes:', error)
-    res.status(500).json({ error: 'Failed to fetch likes' })
+    res.status(500).json({ error: ' likes' })
   }
 })
 

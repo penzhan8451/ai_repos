@@ -1,3 +1,5 @@
+import csrfService from './csrfService'
+
 const API_BASE_URL = 'http://localhost:3001/api'
 
 class ApiService {
@@ -5,18 +7,76 @@ class ApiService {
     this.baseUrl = API_BASE_URL
   }
 
+  // Get JWT token from localStorage
+  getAuthToken() {
+    if (typeof window !== 'undefined') {
+      const authStorage = localStorage.getItem('auth-storage')
+      if (authStorage) {
+        try {
+          const parsed = JSON.parse(authStorage)
+          return parsed.state?.token || null
+        } catch (e) {
+          console.error('Error parsing auth storage:', e)
+          return null
+        }
+      }
+    }
+    return null
+  }
+
   async request(endpoint, options = {}) {
     const url = `${this.baseUrl}${endpoint}`
+    
+    // Get CSRF token
+    let csrfToken = null
+    try {
+      csrfToken = await csrfService.getToken()
+    } catch (error) {
+      console.error('CSRF token error:', error)
+    }
+
+    // Get JWT token
+    const authToken = this.getAuthToken()
+
+    const headers = {
+      'Content-Type': 'application/json',
+      ...options.headers
+    }
+
+    // Add CSRF token to headers
+    if (csrfToken) {
+      headers['X-CSRF-Token'] = csrfToken
+    }
+
+    // Add JWT token to headers
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`
+    }
+
     const config = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers
-      },
-      ...options
+      ...options,
+      headers,
+      credentials: 'include' // Include cookies
     }
 
     try {
       const response = await fetch(url, config)
+
+      // Handle CSRF token error
+      if (response.status === 403 && response.headers.get('X-CSRF-ERROR')) {
+        // Reset token and retry
+        csrfService.resetToken()
+        csrfToken = await csrfService.getToken()
+        config.headers['X-CSRF-Token'] = csrfToken
+        
+        const retryResponse = await fetch(url, config)
+        if (!retryResponse.ok) {
+          const error = await retryResponse.json()
+          throw new Error(error.error || `HTTP error! status: ${retryResponse.status}`)
+        }
+        return await retryResponse.json()
+      }
+
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || `HTTP error! status: ${response.status}`)
@@ -44,17 +104,33 @@ class ApiService {
       formData.append('files', file)
     })
 
-    const response = await fetch(`${this.baseUrl}/media/upload`, {
-      method: 'POST',
-      body: formData
-    })
+    try {
+      const csrfToken = await csrfService.getToken()
+      const authToken = this.getAuthToken()
+      const headers = {
+        'X-CSRF-Token': csrfToken
+      }
+      if (authToken) {
+        headers['Authorization'] = `Bearer ${authToken}`
+      }
+      
+      const response = await fetch(`${this.baseUrl}/media/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+        headers
+      })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Upload failed')
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Upload failed')
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Upload failed:', error)
+      throw error
     }
-
-    return await response.json()
   }
 
   async deleteMedia(id) {
@@ -116,6 +192,39 @@ class ApiService {
   // Health check
   async healthCheck() {
     return this.request('/health')
+  }
+
+  // Auth API (if needed)
+  async login(email, password) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    })
+  }
+
+  async register(username, email, password) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ username, email, password })
+    })
+  }
+
+  async getCurrentUser() {
+    return this.request('/auth/me')
+  }
+
+  async updateProfile(updates) {
+    return this.request('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(updates)
+    })
+  }
+
+  async changePassword(currentPassword, newPassword) {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword })
+    })
   }
 }
 

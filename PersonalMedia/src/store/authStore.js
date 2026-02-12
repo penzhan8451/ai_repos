@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import apiService from '../services/api.js'
 
 const useAuthStore = create(
   persist(
@@ -21,25 +22,13 @@ const useAuthStore = create(
       login: async (email, password) => {
         set({ isLoading: true, error: null })
         try {
-          const response = await fetch('http://localhost:3001/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-          })
-
-          const data = await response.json()
-
-          if (!response.ok) {
-            throw new Error(data.error || '登录失败')
-          }
-
+          const result = await apiService.login(email, password)
           set({
-            user: data.user,
-            token: data.token,
+            user: result.user,
+            token: result.token,
             isAuthenticated: true,
             isLoading: false
           })
-
           return { success: true }
         } catch (error) {
           set({ error: error.message, isLoading: false })
@@ -51,25 +40,13 @@ const useAuthStore = create(
       register: async (username, email, password) => {
         set({ isLoading: true, error: null })
         try {
-          const response = await fetch('http://localhost:3001/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, email, password })
-          })
-
-          const data = await response.json()
-
-          if (!response.ok) {
-            throw new Error(data.error || '注册失败')
-          }
-
+          const result = await apiService.register(username, email, password)
           set({
-            user: data.user,
-            token: data.token,
+            user: result.user,
+            token: result.token,
             isAuthenticated: true,
             isLoading: false
           })
-
           return { success: true }
         } catch (error) {
           set({ error: error.message, isLoading: false })
@@ -93,21 +70,12 @@ const useAuthStore = create(
         if (!token) return
 
         try {
-          const response = await fetch('http://localhost:3001/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          })
-
-          if (response.ok) {
-            const data = await response.json()
-            set({ user: data.user })
-          } else {
-            // Token invalid, logout
-            get().logout()
-          }
+          const result = await apiService.getCurrentUser()
+          set({ user: result.user })
         } catch (error) {
           console.error('Fetch user error:', error)
+          // Token invalid, logout
+          get().logout()
         }
       },
 
@@ -117,22 +85,21 @@ const useAuthStore = create(
         if (!token) return { success: false, error: '未登录' }
 
         try {
-          const response = await fetch('http://localhost:3001/api/auth/profile', {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(updates)
-          })
+          const result = await apiService.updateProfile(updates)
+          set({ user: result.user })
+          return { success: true }
+        } catch (error) {
+          return { success: false, error: error.message }
+        }
+      },
 
-          const data = await response.json()
+      // Change password
+      changePassword: async (currentPassword, newPassword) => {
+        const { token } = get()
+        if (!token) return { success: false, error: '未登录' }
 
-          if (!response.ok) {
-            throw new Error(data.error || '更新失败')
-          }
-
-          set({ user: data.user })
+        try {
+          await apiService.changePassword(currentPassword, newPassword)
           return { success: true }
         } catch (error) {
           return { success: false, error: error.message }

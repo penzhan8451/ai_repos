@@ -8,6 +8,8 @@ import mediaRoutes from './routes/media.js'
 import authRoutes from './routes/auth.js'
 import fs from 'fs'
 import './services/gridfsService.js'
+import cookieParser from 'cookie-parser'
+import csrf from 'csurf'
 
 // Load environment variables
 dotenv.config()
@@ -28,15 +30,54 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Middleware
-app.use(cors())
+const isProduction = process.env.NODE_ENV === 'production'
+
+// CORS configuration
+app.use(cors({
+  credentials: true,
+  origin: (origin, callback) => {
+    // Allow all origins in development
+    if (!isProduction) {
+      callback(null, true)
+      return
+    }
+    
+    // In production, only allow specific origins
+    const allowedOrigins = ['http://localhost:5173', 'http://localhost:3000']
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token'],
+  exposedHeaders: ['X-CSRF-Token'],
+  maxAge: 86400 // 24 hours
+}))
+
 app.use(express.json())
+app.use(cookieParser())
+
+// CSRF protection
+const csrfProtection = csrf({ cookie: {
+  httpOnly: true,
+  secure: isProduction,
+  sameSite: 'strict'
+}})
 
 // Static files for uploads
 app.use('/uploads', express.static(uploadDir))
 
 // Routes
-app.use('/api/media', mediaRoutes)
-app.use('/api/auth', authRoutes)
+// Get CSRF token
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() })
+})
+
+// Protected routes
+app.use('/api/auth', csrfProtection, authRoutes)
+app.use('/api/media', csrfProtection, mediaRoutes)
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -65,6 +106,9 @@ app.get('/api/debug/files', async (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({ error: 'CSRF token 验证失败' })
+  }
   console.error(err.stack)
   res.status(500).json({ error: err.message || 'Something went wrong!' })
 })
@@ -81,8 +125,10 @@ const startServer = async () => {
 
     app.listen(PORT, () => {
       console.log(`Server running on http://localhost:${PORT}`)
+      console.log(`Environment: ${isProduction ? 'Production' : 'Development'}`)
       console.log(`Upload directory: ${uploadDir}`)
       console.log(`MongoDB: ${mongoDBAvailable ? 'Connected' : 'Not available (SQLite-only mode)'}`)
+      console.log(`CORS: ${!isProduction ? 'Allow all origins' : 'Restricted to specific origins'}`)
     })
   } catch (error) {
     console.error('Failed to start server:', error)
