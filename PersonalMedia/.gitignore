@@ -1,13 +1,28 @@
-.assets
-.env
-*.pyc
+# Dependencies
+node_modules/
+
+# Build output
 dist/
 build/
-docs/
-.venv/
+
+# Environment variables
+.env
+.env.local
+
+# Python
+*.pyc
 __pycache__/
+.venv/
 poetry.lock
 .pytest_cache/
+
+# Assets and docs
+.assets
+docs/
 tests/
+
+# Logs
 botpy.log
+
+# OS files
 .DS_Store

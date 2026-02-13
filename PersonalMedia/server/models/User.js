@@ -49,6 +49,16 @@ const userSchema = new mongoose.Schema({
   lockUntil: {
     type: Date,
     default: null
+  },
+  // OAuth 相关字段
+  provider: {
+    type: String,
+    enum: ['local', 'google', 'github'],
+    default: 'local'
+  },
+  providerId: {
+    type: String,
+    default: null
   }
 }, {
   timestamps: true
@@ -57,6 +67,7 @@ const userSchema = new mongoose.Schema({
 // Index for faster queries
 userSchema.index({ email: 1 })
 userSchema.index({ username: 1 })
+userSchema.index({ providerId: 1 })
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {

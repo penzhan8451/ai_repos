@@ -6,6 +6,7 @@ import Videos from './pages/Videos'
 import Favorites from './pages/Favorites'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import OAuthCallback from './pages/OAuthCallback'
 import useAuthStore from './store/authStore'
 import './App.css'
 
@@ -89,6 +90,7 @@ function App() {
                 <Register />
               </PublicRoute>
             } />
+            <Route path="/auth/callback" element={<OAuthCallback />} />
 
             {/* Protected Routes */}
             <Route path="/" element={

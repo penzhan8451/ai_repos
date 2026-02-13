@@ -3,9 +3,11 @@ import cors from 'cors'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import dotenv from 'dotenv'
+import passport from 'passport'
 import { connectMongoDB } from './config/database.js'
 import mediaRoutes from './routes/media.js'
 import authRoutes from './routes/auth.js'
+import oauthRoutes, { configureOAuth } from './routes/oauth.js'
 import fs from 'fs'
 import './services/gridfsService.js'
 import cookieParser from 'cookie-parser'
@@ -59,6 +61,10 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
+// Initialize Passport
+app.use(passport.initialize())
+configureOAuth()
+
 // CSRF protection
 const csrfProtection = csrf({ cookie: {
   httpOnly: true,
@@ -74,6 +80,9 @@ app.use('/uploads', express.static(uploadDir))
 app.get('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() })
 })
+
+// OAuth routes (不需要 CSRF 保护，因为使用 OAuth 流程)
+app.use('/api/auth', oauthRoutes)
 
 // Protected routes
 app.use('/api/auth', csrfProtection, authRoutes)
@@ -129,6 +138,7 @@ const startServer = async () => {
       console.log(`Upload directory: ${uploadDir}`)
       console.log(`MongoDB: ${mongoDBAvailable ? 'Connected' : 'Not available (SQLite-only mode)'}`)
       console.log(`CORS: ${!isProduction ? 'Allow all origins' : 'Restricted to specific origins'}`)
+      console.log(`OAuth: ${process.env.GOOGLE_CLIENT_ID ? 'Google enabled' : 'Google disabled'}, ${process.env.GITHUB_CLIENT_ID ? 'GitHub enabled' : 'GitHub disabled'}`)
     })
   } catch (error) {
     console.error('Failed to start server:', error)
