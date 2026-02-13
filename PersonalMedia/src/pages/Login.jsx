@@ -10,6 +10,11 @@ import {
   clearCredentials,
   hasRememberedCredentials 
 } from '../utils/rememberMe'
+import {
+  isWebAuthnSupported,
+  isBiometricAvailable,
+  loginWithBiometric
+} from '../services/webAuthnService'
 import './Auth.css'
 
 const loginSchema = z.object({
@@ -26,9 +31,12 @@ const loginSchema = z.object({
 
 function Login() {
   const navigate = useNavigate()
-  const { login, isLoading, error, clearError } = useAuthStore()
+  const { login, isLoading, error, clearError, setToken, setUser } = useAuthStore()
   const [showPassword, setShowPassword] = useState(false)
   const [hasRemembered, setHasRemembered] = useState(false)
+  const [biometricSupported, setBiometricSupported] = useState(false)
+  const [biometricAvailable, setBiometricAvailable] = useState(false)
+  const [biometricLoading, setBiometricLoading] = useState(false)
 
   const {
     register,
@@ -43,7 +51,7 @@ function Login() {
     }
   })
 
-  // 检查是否有记住的凭证
+  // 检查是否有记住的凭证和生物识别支持
   useEffect(() => {
     if (hasRememberedCredentials()) {
       setHasRemembered(true)
@@ -54,7 +62,25 @@ function Login() {
         setValue('rememberMe', true)
       }
     }
+    
+    // 检查生物识别支持
+    checkBiometricSupport()
   }, [setValue])
+  
+  // 检查生物识别支持
+  const checkBiometricSupport = async () => {
+    const supported = isWebAuthnSupported()
+    setBiometricSupported(supported)
+    
+    if (supported) {
+      try {
+        const available = await isBiometricAvailable()
+        setBiometricAvailable(available)
+      } catch (error) {
+        console.error('检查生物识别可用性失败:', error)
+      }
+    }
+  }
 
   const onSubmit = async (data) => {
     clearError()
@@ -92,6 +118,31 @@ function Login() {
     // 打开 OAuth 窗口
     window.location.href = authUrl
   }
+  
+  // 生物识别登录
+  const handleBiometricLogin = async () => {
+    if (!biometricSupported || !biometricAvailable) {
+      alert('您的设备不支持生物识别功能')
+      return
+    }
+    
+    setBiometricLoading(true)
+    clearError()
+    
+    try {
+      const result = await loginWithBiometric()
+      if (result.success) {
+        setToken(result.token)
+        setUser(result.user)
+        navigate('/')
+      }
+    } catch (error) {
+      console.error('生物识别登录失败:', error)
+      alert('生物识别登录失败: ' + (error.message || '请重试'))
+    } finally {
+      setBiometricLoading(false)
+    }
+  }
 
   return (
     <div className="auth-page">
@@ -127,6 +178,22 @@ function Login() {
             </svg>
             使用 GitHub 登录
           </button>
+          
+          {/* 生物识别登录按钮 */}
+          {biometricSupported && biometricAvailable && (
+            <button 
+              type="button" 
+              className="social-btn biometric"
+              onClick={handleBiometricLogin}
+              disabled={biometricLoading}
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5-9c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3zm10 0c0 1.66 1.34 3 3 3s3-1.34 3-3-1.34-3-3-3-3 1.34-3 3z"/>
+                <path d="M12 6c-3.31 0-6 2.69-6 6 0 1.66.67 3.16 1.76 4.24l1.41-1.41C8.56 13.63 8 12.38 8 11c0-2.21 1.79-4 4-4s4 1.79 4 4c0 1.38-.56 2.63-1.47 3.53l1.41 1.41C17.33 15.16 18 13.66 18 12c0-3.31-2.69-6-6-6z"/>
+              </svg>
+              {biometricLoading ? '验证中...' : '使用指纹/面部识别登录'}
+            </button>
+          )}
         </div>
 
         <div className="divider">

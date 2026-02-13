@@ -59,7 +59,29 @@ const userSchema = new mongoose.Schema({
   providerId: {
     type: String,
     default: null
-  }
+  },
+  // WebAuthn 生物识别凭证
+  webAuthnCredentials: [{
+    credentialID: {
+      type: String,
+      required: true
+    },
+    credentialPublicKey: {
+      type: String,
+      required: true
+    },
+    counter: {
+      type: Number,
+      default: 0
+    },
+    transports: [{
+      type: String
+    }],
+    createdAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true
 })
@@ -68,6 +90,7 @@ const userSchema = new mongoose.Schema({
 userSchema.index({ email: 1 })
 userSchema.index({ username: 1 })
 userSchema.index({ providerId: 1 })
+userSchema.index({ 'webAuthnCredentials.credentialID': 1 })
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
@@ -126,6 +149,7 @@ userSchema.methods.toJSON = function() {
   delete obj.password
   delete obj.loginAttempts
   delete obj.lockUntil
+  delete obj.webAuthnCredentials
   return obj
 }
 

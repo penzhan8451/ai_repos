@@ -69,6 +69,25 @@
   color: #333;
 }
 
+/* 生物识别按钮样式 */
+.social-btn.biometric {
+  background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.social-btn.biometric:hover {
+  background: linear-gradient(135deg, #0d8579 0%, #2dd46a 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(17, 153, 142, 0.3);
+}
+
+.social-btn.biometric:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .social-btn svg {
   flex-shrink: 0;
 }
