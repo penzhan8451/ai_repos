@@ -1,0 +1,58 @@
+name: lifeassistant
+description: 生活助手 - 春节主题待办事项提醒应用
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+homepage: https://github.com/lipeng/lifeassistant
+repository: https://github.com/lipeng/lifeassistant
+issue_tracker: https://github.com/lipeng/lifeassistant/issues
+
+authors:
+  - 生活助手开发团队 <support@lifeassistant.app>
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # 状态管理
+  provider: ^6.1.1
+  
+  # 本地数据库
+  sqflite: ^2.3.0
+  sqflite_common_ffi_web: ^0.4.2+3
+  path: ^1.8.3
+  
+  # 本地通知
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.2
+  
+  # 权限管理
+  permission_handler: ^11.1.0
+  
+  # 日期时间选择器
+  flutter_datetime_picker_plus: ^2.1.0
+  
+  # 国际化
+  intl: ^0.19.0
+  
+  # 共享偏好设置
+  shared_preferences: ^2.2.2
+  
+  # 动画
+  animations: ^2.0.11
+  
+  # 图标
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
