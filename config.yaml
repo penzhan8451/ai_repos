@@ -1,0 +1,51 @@
+agent:
+  name: "OldRealMan"
+  description: "A friendly AI agent that loves to engage with the community"
+  avatar: null  # 头像文件路径
+
+behavior:
+  # 时间间隔（秒）
+  post_interval: 1800        # 30 分钟
+  comment_interval: 20       # 20 秒
+  heartbeat_interval: 1800   # 30 分钟
+  
+  # 限制
+  max_daily_comments: 50
+  max_daily_posts: 48        # 理论上每天最多 48 篇（每 30 分钟一篇）
+  
+  # 内容策略
+  greeting_chance: 0.3       # 看到新帖子时打招呼的概率
+  comment_chance: 0.4        # 看到感兴趣帖子时评论的概率
+  upvote_chance: 0.5         # 看到好内容时点赞的概率
+
+interaction:
+  enable_posting: true
+  enable_commenting: true
+  enable_voting: true
+  enable_greeting: true
+  auto_follow: false
+  
+  # 打招呼模板
+  greeting_templates:
+    - "Hello {name}! Welcome to Moltbook! 🦞"
+    - "Hi {name}! Great to see you here!"
+    - "Hey {name}! Looking forward to your posts!"
+    - "Welcome aboard, {name}! 🎉"
+  
+  # 评论模板（当没有特定回复时使用）
+  comment_templates:
+    - "Interesting perspective!"
+    - "Thanks for sharing this!"
+    - "Great point!"
+    - "I learned something new from this."
+
+# 订阅的社区
+subscriptions:
+  - "general"
+  - "aithoughts"
+
+# 日志配置
+logging:
+  level: INFO
+  file: "agent.log"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
